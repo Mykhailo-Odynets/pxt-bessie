@@ -3,13 +3,16 @@
  */
 //% color="#2754A5" icon="\uf085" block="Krokový Motor"
 namespace StepperMotor {
+    export enum Modes {
+        FullStep = 2048,
+        HalfStep = 4096
+    }
 
-    // Konstanty pro motor 28BYJ-48 v režimu Full Step
-    const STEPS_PER_REV = 2048;
-    let stepPhase = 0;
+    let stepPhase: number = 0;
 
     // Klíč pro uložení do paměti micro:bitu
-    const SETTING_WHEEL_SIZE = "w_size";
+    const SETTING_WHEEL_SIZE = "wheel_size";
+    const MOTOR_MODE = "motor_mode";
 
     /**
      * Interní funkce pro vykonání jednoho kroku
@@ -33,6 +36,14 @@ namespace StepperMotor {
         if (saved == 0) return 30; // Pokud není uloženo nic, vrátíme 30
         return saved;
     }
+    /**
+     * Získá aktuálně uložený režim motoru (výchozí Full Step)
+     */
+    function getMotorMode(): number {
+        let saved = settings.readNumber(MOTOR_MODE);
+        if (saved == 0) return Modes.FullStep; // Pokud není uloženo nic, vrátíme Full Step
+        return saved;
+    }
 
     /**
      * Otočí motorem o zadaný počet stupňů.
@@ -42,7 +53,7 @@ namespace StepperMotor {
     //% deg.shadow="arcBall"
     //% delay.defl=5
     export function rotateDegrees(deg: number, pA: DigitalPin, pB: DigitalPin, pC: DigitalPin, pD: DigitalPin, delay: number): void {
-        let stepsToRun = Math.abs((deg / 360) * STEPS_PER_REV);
+        let stepsToRun = Math.abs((deg / 360) * getMotorMode());
         let direction = deg > 0 ? 1 : -1;
 
         for (let i = 0; i < stepsToRun; i++) {
@@ -56,14 +67,14 @@ namespace StepperMotor {
     /**
      * Ujede zadanou vzdálenost v milimetrech.
      * @param mm kolik milimetrů má robot ujet
-     * @param wheelDiameter průměr kola v milimetrech
+     * @param delay určuje rychlost otáčení
      */
-    //% block="ujeď %mm mm | s kolem o průměru %wheelDiameter mm | piny A:%pA B:%pB C:%pC D:%pD | rychlost %delay ms"
+    //% block="ujeď %mm mm | piny A:%pA B:%pB C:%pC D:%pD | rychlost %delay ms"
     //% mm.defl=100 wheelDiameter.defl=65 delay.defl=5
-    export function moveDistance(mm: number, pA: DigitalPin, pB: DigitalPin, pC: DigitalPin, pD: DigitalPin, delay: number): void {
+    export function moveDistance(mm: number, delay: number, pA: DigitalPin, pB: DigitalPin, pC: DigitalPin, pD: DigitalPin): void {
         let circumference = getWheelDiameter() * Math.PI; // Obvod kola
         let revolutions = mm / circumference;       // Kolik otoček je potřeba
-        let stepsToRun = Math.abs(revolutions * STEPS_PER_REV);
+        let stepsToRun = Math.abs(revolutions * getMotorMode());
         let direction = mm > 0 ? 1 : -1;
 
         for (let i = 0; i < stepsToRun; i++) {
@@ -100,6 +111,14 @@ namespace StepperMotor {
         if (diameter <= 0) return;
 
         settings.writeNumber(SETTING_WHEEL_SIZE, diameter);
+    }
+
+    /**
+     * Uloží nový režim motoru.
+     * @param mode režim motoru
+     */
+    export function setMotorMode(mode: Modes): void {
+        settings.writeNumber(MOTOR_MODE, mode);
     }
 
     /**
