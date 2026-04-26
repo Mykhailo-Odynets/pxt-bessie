@@ -60,8 +60,8 @@ namespace StepperMotor {
      */
     //% block="ujeď %mm mm | s kolem o průměru %wheelDiameter mm | piny A:%pA B:%pB C:%pC D:%pD | rychlost %delay ms"
     //% mm.defl=100 wheelDiameter.defl=65 delay.defl=5
-    export function moveDistance(mm: number, wheelDiameter: number, pA: DigitalPin, pB: DigitalPin, pC: DigitalPin, pD: DigitalPin, delay: number): void {
-        let circumference = wheelDiameter * Math.PI; // Obvod kola
+    export function moveDistance(mm: number, pA: DigitalPin, pB: DigitalPin, pC: DigitalPin, pD: DigitalPin, delay: number): void {
+        let circumference = getWheelDiameter() * Math.PI; // Obvod kola
         let revolutions = mm / circumference;       // Kolik otoček je potřeba
         let stepsToRun = Math.abs(revolutions * STEPS_PER_REV);
         let direction = mm > 0 ? 1 : -1;
@@ -71,6 +71,35 @@ namespace StepperMotor {
             control.waitMicros(delay * 1000);
         }
         release(pA, pB, pC, pD);
+    }
+
+    /**
+     * Kalibrační funkce: Vypočítá nový průměr kola a uloží ho.
+     * @param targetMm kolik robot MĚL ujet (např. 200)
+     * @param actualMm kolik robot SKUTEČNĚ ujel (změřeno pravítkem)
+     */
+    //% block="kalibruj: cíl byl %targetMm mm, skutečnost %actualMm mm"
+    //% targetMm.defl=200 actualMm.defl=200
+    export function calibrate(targetMm: number, actualMm: number): void {
+        if (actualMm <= 0) return;
+
+        let currentDiameter = getWheelDiameter();
+        // Matematika: Nový_průměr = Starý_průměr * (Skutečná_vzdálenost / Cílová_vzdálenost)
+        let newDiameter = currentDiameter * (actualMm / targetMm);
+
+        settings.writeNumber(SETTING_WHEEL_SIZE, newDiameter);
+    }
+
+    /**
+     * Uloží nový průměr kola.
+     * @param diameter průměr kola
+     */
+    //% block="nastav průměr %diameter mm"
+    //% diameter.defl=30
+    export function setWheelSize(diameter: number): void {
+        if (diameter <= 0) return;
+
+        settings.writeNumber(SETTING_WHEEL_SIZE, diameter);
     }
 
     /**
