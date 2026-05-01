@@ -5,7 +5,8 @@
         "core": "*",
         "radio": "*",
         "microphone": "*",
-        "settings": "*"
+        "settings": "*",
+        "pxt-magicbit-pca9685": "github:tomaskazda/pxt-magicbit-pca9685#1e097c914b2c7ed1f4071d7b6288ef64812030e2"
     },
     "files": [
         "main.ts",

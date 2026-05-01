@@ -1,76 +1,55 @@
-/**
- * Custom I2C Stepper Library for 28BYJ-48
- * Based on PCA9685 I2C Driver (Address 0x40)
- */
-//% color="#228b22" icon="\uf085" block="I2C Stepper"
-namespace I2CStepper {
-    const PCA9685_ADDRESS = 0x40
-    const MODE1 = 0x00
-    const LED0_ON_L = 0x06
+namespace StepperMotorPlus {
+    let _rpmDelay = 5
+    const STEPS_PER_REV = 4096
 
-    let _speedDelay = 2 // Default speed delay in ms
-    const STEPS_PER_REV = 4096 // For 28BYJ-48 in Half-Step mode
-
-    function i2cWrite(addr: number, reg: number, value: number) {
-        let buf = pins.createBuffer(2)
-        buf[0] = reg
-        buf[1] = value
-        pins.i2cWriteBuffer(addr, buf)
-    }
-
-    function setPWM(channel: number, on: number, off: number) {
-        i2cWrite(PCA9685_ADDRESS, LED0_ON_L + 4 * channel, on & 0xff)
-        i2cWrite(PCA9685_ADDRESS, LED0_ON_L + 4 * channel + 1, (on >> 8) & 0xff)
-        i2cWrite(PCA9685_ADDRESS, LED0_ON_L + 4 * channel + 2, off & 0xff)
-        i2cWrite(PCA9685_ADDRESS, LED0_ON_L + 4 * channel + 3, (off >> 8) & 0xff)
-    }
-
-    // Half-step sequence for 28BYJ-48
-    const stepSeq = [
-        [1, 0, 0, 0], [1, 1, 0, 0], [0, 1, 0, 0], [0, 1, 1, 0],
-        [0, 0, 1, 0], [0, 0, 1, 1], [0, 0, 0, 1], [1, 0, 0, 1]
-    ]
-
-    function doStep(step: number) {
-        let s = stepSeq[step % 8]
-        for (let i = 0; i < 4; i++) {
-            setPWM(8 + i, 0, s[i] ? 4095 : 0) // Assumes pins 8,9,10,11 on PCA9685
-        }
+    export enum Steppers {
+        STP1 = PCAmotor.Steppers.STPM1,
+        STP2 = PCAmotor.Steppers.STPM2,
+        Both
     }
 
     /**
-     * Set motor speed (1-15 RPM recommended for 28BYJ-48)
+     * Set speed in RPM (1-15 recommended)
      */
-    //% block="set speed to %rpm RPM"
+    //% block="set %motor speed to %rpm RPM"
     export function setSpeed(rpm: number) {
-        // Convert RPM to delay: 60,000ms / (RPM * 4096 steps)
-        _speedDelay = Math.max(1, 60000 / (rpm * STEPS_PER_REV))
+        _rpmDelay = Math.max(1, (60000 / (rpm * STEPS_PER_REV)) * 8)
     }
 
     /**
-     * Rotate the motor by a specific degree
+     * Rotate motor(s) by degrees
      */
-    //% block="rotate %degrees degrees"
-    export function rotateDegrees(degrees: number) {
-        let steps = Math.abs((degrees / 360) * STEPS_PER_REV)
-        for (let i = 0; i < steps; i++) {
-            doStep(i)
-            basic.pause(_speedDelay)
+    //% block="rotate %motor %degrees degrees"
+    export function rotateDegrees(motor: Steppers, degrees: number) {
+        let stepsNeeded = Math.abs((degrees / 360) * STEPS_PER_REV) / 8
+
+        for (let i = 0; i < stepsNeeded; i++) {
+            if (motor == Steppers.STP1 || motor == Steppers.Both) {
+                PCAmotor.StepperDegree(PCAmotor.Steppers.STPM1, 2) // Moving in 2-degree increments for stability
+            }
+            if (motor == Steppers.STP2 || motor == Steppers.Both) {
+                PCAmotor.StepperDegree(PCAmotor.Steppers.STPM2, 2)
+            }
+            basic.pause(_rpmDelay)
         }
     }
 
     /**
-     * Travel a specific distance in cm
-     * @param cm distance to travel
-     * @param wheelDiam diameter of the wheel in cm
+     * Travel distance in cm
      */
-    //% block="travel %cm cm with wheel diameter %wheelDiam cm"
-    export function travelDistance(cm: number, wheelDiam: number) {
-        let circumference = Math.PI * wheelDiam
-        let rotations = cm / circumference
-        rotateDegrees(rotations * 360)
+    //% block="move %motor %cm cm | wheel diameter %wheelDiam cm"
+    export function travelDistance(motor: Steppers, cm: number, wheelDiam: number) {
+        let circumference = 3.14159 * wheelDiam
+        let degrees = (cm / circumference) * 360
+        rotateDegrees(motor, degrees)
     }
 
-    // Initialize PCA9685
-    i2cWrite(PCA9685_ADDRESS, MODE1, 0x00)
+    /**
+     * Stop all motors (cuts power to save battery/heat)
+     */
+    //% block="stop all motors"
+    export function stopAll() {
+        PCAmotor.StepperStop(PCAmotor.Steppers.STPM1)
+        PCAmotor.StepperStop(PCAmotor.Steppers.STPM2)
+    }
 }
