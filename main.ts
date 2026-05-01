@@ -1,134 +1,76 @@
 /**
- * Knihovna pro ovládání krokového motoru (např. 28BYJ-48)
+ * Custom I2C Stepper Library for 28BYJ-48
+ * Based on PCA9685 I2C Driver (Address 0x40)
  */
-//% color="#2754A5" icon="\uf085" block="Krokový Motor"
-namespace StepperMotor {
-    export enum Modes {
-        FullStep = 2048,
-        HalfStep = 4096
+//% color="#228b22" icon="\uf085" block="I2C Stepper"
+namespace I2CStepper {
+    const PCA9685_ADDRESS = 0x40
+    const MODE1 = 0x00
+    const LED0_ON_L = 0x06
+
+    let _speedDelay = 2 // Default speed delay in ms
+    const STEPS_PER_REV = 4096 // For 28BYJ-48 in Half-Step mode
+
+    function i2cWrite(addr: number, reg: number, value: number) {
+        let buf = pins.createBuffer(2)
+        buf[0] = reg
+        buf[1] = value
+        pins.i2cWriteBuffer(addr, buf)
     }
 
-    let stepPhase: number = 0;
-
-    // Klíč pro uložení do paměti micro:bitu
-    const SETTING_WHEEL_SIZE = "wheel_size";
-    const MOTOR_MODE = "motor_mode";
-
-    /**
-     * Interní funkce pro vykonání jednoho kroku
-     */
-    function doStep(pA: DigitalPin, pB: DigitalPin, pC: DigitalPin, pD: DigitalPin, direction: number): void {
-        stepPhase += direction;
-        if (stepPhase > 3) stepPhase = 0;
-        if (stepPhase < 0) stepPhase = 3;
-
-        pins.digitalWritePin(pA, (stepPhase == 0) ? 1 : 0);
-        pins.digitalWritePin(pB, (stepPhase == 1) ? 1 : 0);
-        pins.digitalWritePin(pC, (stepPhase == 2) ? 1 : 0);
-        pins.digitalWritePin(pD, (stepPhase == 3) ? 1 : 0);
+    function setPWM(channel: number, on: number, off: number) {
+        i2cWrite(PCA9685_ADDRESS, LED0_ON_L + 4 * channel, on & 0xff)
+        i2cWrite(PCA9685_ADDRESS, LED0_ON_L + 4 * channel + 1, (on >> 8) & 0xff)
+        i2cWrite(PCA9685_ADDRESS, LED0_ON_L + 4 * channel + 2, off & 0xff)
+        i2cWrite(PCA9685_ADDRESS, LED0_ON_L + 4 * channel + 3, (off >> 8) & 0xff)
     }
 
-    /**
-     * Získá aktuálně uložený průměr kola (výchozí 30)
-     */
-    function getWheelDiameter(): number {
-        let saved = settings.readNumber(SETTING_WHEEL_SIZE);
-        if (saved == 0) return 30; // Pokud není uloženo nic, vrátíme 30
-        return saved;
-    }
-    /**
-     * Získá aktuálně uložený režim motoru (výchozí Full Step)
-     */
-    function getMotorMode(): number {
-        let saved = settings.readNumber(MOTOR_MODE);
-        if (saved == 0) return Modes.FullStep; // Pokud není uloženo nic, vrátíme Full Step
-        return saved;
-    }
+    // Half-step sequence for 28BYJ-48
+    const stepSeq = [
+        [1, 0, 0, 0], [1, 1, 0, 0], [0, 1, 0, 0], [0, 1, 1, 0],
+        [0, 0, 1, 0], [0, 0, 1, 1], [0, 0, 0, 1], [1, 0, 0, 1]
+    ]
 
-    /**
-     * Otočí motorem o zadaný počet stupňů.
-     * @param deg počet stupňů (např. 90, 360, -180 pro zpětný chod)
-     */
-    //% block="otoč o %deg stupňů | piny A:%pA B:%pB C:%pC D:%pD | rychlost (prodleva) %delay ms"
-    //% deg.shadow="arcBall"
-    //% delay.defl=5
-    export function rotateDegrees(deg: number, pA: DigitalPin, pB: DigitalPin, pC: DigitalPin, pD: DigitalPin, delay: number): void {
-        let stepsToRun = Math.abs((deg / 360) * getMotorMode());
-        let direction = deg > 0 ? 1 : -1;
-
-        for (let i = 0; i < stepsToRun; i++) {
-            doStep(pA, pB, pC, pD, direction);
-            control.waitMicros(delay * 1000);
+    function doStep(step: number) {
+        let s = stepSeq[step % 8]
+        for (let i = 0; i < 4; i++) {
+            setPWM(8 + i, 0, s[i] ? 4095 : 0) // Assumes pins 8,9,10,11 on PCA9685
         }
-        // Vypnutí pinů po dokončení (šetří energii a motor se nehřeje)
-        release(pA, pB, pC, pD);
     }
 
     /**
-     * Ujede zadanou vzdálenost v milimetrech.
-     * @param mm kolik milimetrů má robot ujet
-     * @param delay určuje rychlost otáčení
+     * Set motor speed (1-15 RPM recommended for 28BYJ-48)
      */
-    //% block="ujeď %mm mm | piny A:%pA B:%pB C:%pC D:%pD | rychlost %delay ms"
-    //% mm.defl=100 wheelDiameter.defl=65 delay.defl=5
-    export function moveDistance(mm: number, delay: number, pA: DigitalPin, pB: DigitalPin, pC: DigitalPin, pD: DigitalPin): void {
-        let circumference = getWheelDiameter() * Math.PI; // Obvod kola
-        let revolutions = mm / circumference;       // Kolik otoček je potřeba
-        let stepsToRun = Math.abs(revolutions * getMotorMode());
-        let direction = mm > 0 ? 1 : -1;
+    //% block="set speed to %rpm RPM"
+    export function setSpeed(rpm: number) {
+        // Convert RPM to delay: 60,000ms / (RPM * 4096 steps)
+        _speedDelay = Math.max(1, 60000 / (rpm * STEPS_PER_REV))
+    }
 
-        for (let i = 0; i < stepsToRun; i++) {
-            doStep(pA, pB, pC, pD, direction);
-            control.waitMicros(delay * 1000);
+    /**
+     * Rotate the motor by a specific degree
+     */
+    //% block="rotate %degrees degrees"
+    export function rotateDegrees(degrees: number) {
+        let steps = Math.abs((degrees / 360) * STEPS_PER_REV)
+        for (let i = 0; i < steps; i++) {
+            doStep(i)
+            basic.pause(_speedDelay)
         }
-        release(pA, pB, pC, pD);
     }
 
     /**
-     * Kalibrační funkce: Vypočítá nový průměr kola a uloží ho.
-     * @param targetMm kolik robot MĚL ujet (např. 200)
-     * @param actualMm kolik robot SKUTEČNĚ ujel (změřeno pravítkem)
+     * Travel a specific distance in cm
+     * @param cm distance to travel
+     * @param wheelDiam diameter of the wheel in cm
      */
-    //% block="kalibruj: cíl byl %targetMm mm, skutečnost %actualMm mm"
-    //% targetMm.defl=200 actualMm.defl=200
-    export function calibrate(targetMm: number, actualMm: number): void {
-        if (actualMm <= 0) return;
-
-        let currentDiameter = getWheelDiameter();
-        // Matematika: Nový_průměr = Starý_průměr * (Skutečná_vzdálenost / Cílová_vzdálenost)
-        let newDiameter = currentDiameter * (actualMm / targetMm);
-
-        settings.writeNumber(SETTING_WHEEL_SIZE, newDiameter);
+    //% block="travel %cm cm with wheel diameter %wheelDiam cm"
+    export function travelDistance(cm: number, wheelDiam: number) {
+        let circumference = Math.PI * wheelDiam
+        let rotations = cm / circumference
+        rotateDegrees(rotations * 360)
     }
 
-    /**
-     * Uloží nový průměr kola.
-     * @param diameter průměr kola
-     */
-    //% block="nastav průměr %diameter mm"
-    //% diameter.defl=30
-    export function setWheelSize(diameter: number): void {
-        if (diameter <= 0) return;
-
-        settings.writeNumber(SETTING_WHEEL_SIZE, diameter);
-    }
-
-    /**
-     * Uloží nový režim motoru.
-     * @param mode režim motoru
-     */
-    export function setMotorMode(mode: Modes): void {
-        settings.writeNumber(MOTOR_MODE, mode);
-    }
-
-    /**
-     * Vypne proud do motoru (piny na 0)
-     */
-    //% block="uvolni motor na pinech A:%pA B:%pB C:%pC D:%pD"
-    export function release(pA: DigitalPin, pB: DigitalPin, pC: DigitalPin, pD: DigitalPin): void {
-        pins.digitalWritePin(pA, 0);
-        pins.digitalWritePin(pB, 0);
-        pins.digitalWritePin(pC, 0);
-        pins.digitalWritePin(pD, 0);
-    }
+    // Initialize PCA9685
+    i2cWrite(PCA9685_ADDRESS, MODE1, 0x00)
 }
