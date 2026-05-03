@@ -9,8 +9,8 @@ namespace StepperMotorPlus {
     const PRESCALE = 0xFE
     const LED0_ON_L = 0x06
 
-    // 28BYJ-48 Full-Step Mode Constant
-    const STEPS_PER_REV = 2048
+    // 28BYJ-48 Half-Step Mode Constant
+    const STEPS_PER_REV = 4096
 
     let _rpmDelay = 2000 // Microseconds between steps
     let _initialized = false
@@ -28,10 +28,8 @@ namespace StepperMotorPlus {
 
     // Full-Step sequence for maximum speed
     const stepSeq = [
-        [1, 0, 0, 1], // Phase 1
-        [1, 1, 0, 0], // Phase 2
-        [0, 1, 1, 0], // Phase 3
-        [0, 0, 1, 1]  // Phase 4
+        [1, 0, 0, 0], [1, 1, 0, 0], [0, 1, 0, 0], [0, 1, 1, 0],
+        [0, 0, 1, 0], [0, 0, 1, 1], [0, 0, 0, 1], [1, 0, 0, 1]
     ]
 
     function i2cWrite(reg: number, value: number) {
@@ -103,8 +101,6 @@ namespace StepperMotorPlus {
             if (motor == StepperList.STP2 || motor == StepperList.Both) doStep(2, dir)
             control.waitMicros(_rpmDelay)
         }
-
-        stopAll()
     }
 
     /**
