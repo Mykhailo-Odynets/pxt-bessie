@@ -1,18 +1,23 @@
+/**
+ * Final Optimized Stepper Library for 28BYJ-48 (I2C / PCA9685)
+ * Features: Speed Control, Degree Rotation, Distance Travel, Sync Dual Motors
+ */
+//% color="#228b22" icon="\uf085" block="Stepper Plus"
 namespace StepperMotorPlus {
     const ADDRESS = 0x40
     const MODE1 = 0x00
     const PRESCALE = 0xFE
     const LED0_ON_L = 0x06
 
-    const STEPS_PER_REV = 4096
-    let _rpmDelay = 2
-    let _initialized = false
+    // 28BYJ-48 Full-Step Mode Constant
+    const STEPS_PER_REV = 2048
 
-    // State tracking for the 8-step sequence
+    let _rpmDelay = 2000 // Microseconds between steps
+    let _initialized = false
     let _phase1 = 0
     let _phase2 = 0
 
-    export enum Steppers {
+    export enum StepperList {
         //% block="Stepper 1"
         STP1 = 1,
         //% block="Stepper 2"
@@ -21,10 +26,9 @@ namespace StepperMotorPlus {
         Both = 3
     }
 
-    // Half-step sequence (smoother and higher torque for 28BYJ-48)
+    // Full-Step sequence for maximum speed
     const stepSeq = [
-        [1, 0, 0, 0], [1, 1, 0, 0], [0, 1, 0, 0], [0, 1, 1, 0],
-        [0, 0, 1, 0], [0, 0, 1, 1], [0, 0, 0, 1], [1, 0, 0, 1]
+        [1, 1, 0, 0], [0, 1, 1, 0], [0, 0, 1, 1], [1, 0, 0, 1]
     ]
 
     function i2cWrite(reg: number, value: number) {
@@ -46,88 +50,76 @@ namespace StepperMotorPlus {
 
     function init(): void {
         if (_initialized) return
+        // pins.i2cSetFastMode(true) // Set I2C to 400kHz
         i2cWrite(MODE1, 0x00)
-        // Set frequency to 50Hz (Standard for PCA9685)
-        let prescale = Math.floor(25000000 / (4096 * 50) - 1)
         let oldmode = pins.i2cReadNumber(ADDRESS, NumberFormat.UInt8BE)
         i2cWrite(MODE1, (oldmode & 0x7F) | 0x10) // sleep
-        i2cWrite(PRESCALE, prescale)
+        i2cWrite(PRESCALE, 121) // ~50Hz
         i2cWrite(MODE1, oldmode)
         control.waitMicros(5000)
         i2cWrite(MODE1, oldmode | 0xa1)
         _initialized = true
     }
 
-    /**
-     * Internal function to move a motor by one physical step in the sequence
-     */
     function doStep(motor: number, dir: number) {
-        let phase = 0
-        let startPin = (motor == 1) ? 0 : 4 // STP1 uses 0-3, STP2 uses 4-7
-
-        // Update global phase tracking
+        let startPin = (motor == 1) ? 0 : 4
         if (motor == 1) {
-            _phase1 = (_phase1 + dir + 8) % 8
-            phase = _phase1
+            _phase1 = (_phase1 + dir + 4) % 4
+            let pinsArr = stepSeq[_phase1]
+            for (let i = 0; i < 4; i++) setPwm(startPin + i, 0, pinsArr[i] ? 4095 : 0)
         } else {
-            _phase2 = (_phase2 + dir + 8) % 8
-            phase = _phase2
-        }
-
-        let pinsArr = stepSeq[phase]
-        for (let i = 0; i < 4; i++) {
-            setPwm(startPin + i, 0, pinsArr[i] ? 4095 : 0)
+            _phase2 = (_phase2 + dir + 4) % 4
+            let pinsArr = stepSeq[_phase2]
+            for (let i = 0; i < 4; i++) setPwm(startPin + i, 0, pinsArr[i] ? 4095 : 0)
         }
     }
 
     /**
-     * Set speed in RPM (1-15 recommended)
+     * Set motor speed in RPM. 
+     * Note: 28BYJ-48 maxes out around 15-20 RPM.
      */
     //% block="set %motor speed to %rpm RPM"
+    //% weight=100
     export function setSpeed(rpm: number) {
-        // (60000ms / (RPM * 4096 steps))
-        _rpmDelay = Math.max(1, 60000 / (rpm * STEPS_PER_REV))
+        // Convert RPM to microseconds: (60,000,000us / (RPM * 2048 steps))
+        _rpmDelay = Math.max(500, 60000000 / (rpm * STEPS_PER_REV))
     }
 
     /**
-     * Rotate motor(s) by degrees
+     * Rotate motor(s) by a specific degree amount.
      */
     //% block="rotate %motor %degrees degrees"
-    export function rotateDegrees(motor: Steppers, degrees: number) {
+    //% weight=90
+    export function rotateDegrees(motor: StepperList, degrees: number) {
         init()
         let steps = Math.abs((degrees / 360) * STEPS_PER_REV)
         let dir = degrees > 0 ? 1 : -1
 
         for (let i = 0; i < steps; i++) {
-            if (motor == Steppers.STP1 || motor == Steppers.Both) {
-                doStep(1, dir)
-            }
-            if (motor == Steppers.STP2 || motor == Steppers.Both) {
-                doStep(2, dir)
-            }
-            // Using waitMicros for higher precision speed at low delays
-            control.waitMicros(_rpmDelay * 1000)
+            if (motor == StepperList.STP1 || motor == StepperList.Both) doStep(1, dir)
+            if (motor == StepperList.STP2 || motor == StepperList.Both) doStep(2, dir)
+            control.waitMicros(_rpmDelay)
         }
     }
 
     /**
-     * Travel distance in cm
+     * Move motor(s) forward/backward by distance in centimeters.
      */
     //% block="move %motor %cm cm | wheel diameter %wheelDiam cm"
-    export function travelDistance(motor: Steppers, cm: number, wheelDiam: number) {
+    //% weight=80
+    export function travelDistance(motor: StepperList, cm: number, wheelDiam: number) {
         let circumference = Math.PI * wheelDiam
         let degrees = (cm / circumference) * 360
         rotateDegrees(motor, degrees)
     }
 
     /**
-     * Stop and kill power to motors (prevents heat)
+     * Cuts power to all stepper coils to save battery and prevent heat.
      */
     //% block="stop all motors"
+    //% weight=70
     export function stopAll() {
         init()
-        for (let i = 0; i < 16; i++) {
-            setPwm(i, 0, 0)
-        }
+        for (let i = 0; i < 16; i++) setPwm(i, 0, 0)
     }
 }
