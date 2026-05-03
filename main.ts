@@ -62,16 +62,20 @@ namespace StepperMotorPlus {
         _initialized = true
     }
 
-    function doStep(motor: number, dir: number) {
-        let startPin = (motor == 1) ? 0 : 4
-        if (motor == 1) {
-            _phase1 = (_phase1 + dir + 4) % 4
-            let pinsArr = stepSeq[_phase1]
-            for (let i = 0; i < 4; i++) setPwm(startPin + i, 0, pinsArr[i] ? 4095 : 0)
+    function doStep(m: number, dir: number) {
+        // MAGICBIT SPECIFIC PIN MAPPING:
+        // Stepper 1 uses PCA9685 pins 0, 2, 1, 3
+        // Stepper 2 uses PCA9685 pins 4, 6, 5, 7
+        let pinsMap = (m == 1) ? [0, 2, 1, 3] : [4, 6, 5, 7]
+
+        if (m == 1) {
+            _phase1 = (_phase1 + dir + 8) % 8
+            let p = stepSeq[_phase1]
+            for (let i = 0; i < 4; i++) setPwm(pinsMap[i], 0, p[i] ? 4095 : 0)
         } else {
-            _phase2 = (_phase2 + dir + 4) % 4
-            let pinsArr = stepSeq[_phase2]
-            for (let i = 0; i < 4; i++) setPwm(startPin + i, 0, pinsArr[i] ? 4095 : 0)
+            _phase2 = (_phase2 + dir + 8) % 8
+            let p = stepSeq[_phase2]
+            for (let i = 0; i < 4; i++) setPwm(pinsMap[i], 0, p[i] ? 4095 : 0)
         }
     }
 
