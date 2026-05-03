@@ -80,31 +80,37 @@ namespace StepperMotorPlus {
     }
 
     /**
-     * Set motor speed in RPM. 
-     * Note: 28BYJ-48 maxes out around 15-20 RPM.
+     * Set motor speed (RPM). 
+     * For 28BYJ-48, 2-8 RPM is the "Power Zone" where it has the most torque.
      */
     //% block="set %motor speed to %rpm RPM"
-    //% weight=100
     export function setSpeed(rpm: number) {
-        // Convert RPM to microseconds: (60,000,000us / (RPM * 2048 steps))
-        _rpmDelay = Math.max(500, 60000000 / (rpm * STEPS_PER_REV))
+        // We cap the speed at 10 RPM for this test to ensure it doesn't stall
+        let safeRpm = Math.clamp(1, 10, rpm);
+        // Increase the delay to give the coils more time to energize
+        _rpmDelay = 60000000 / (safeRpm * STEPS_PER_REV);
     }
 
     /**
-     * Rotate motor(s) by a specific degree amount.
+     * Rotate motor(s) by degrees
      */
     //% block="rotate %motor %degrees degrees"
-    //% weight=90
     export function rotateDegrees(motor: StepperList, degrees: number) {
-        init()
-        let steps = Math.abs((degrees / 360) * STEPS_PER_REV)
-        let dir = degrees > 0 ? 1 : -1
+        init();
+        // 4096 steps is one full circle. 
+        // We use Math.ceil to make sure we don't lose fractional steps
+        let steps = Math.ceil(Math.abs((degrees / 360) * STEPS_PER_REV));
+        let dir = degrees > 0 ? 1 : -1;
 
         for (let i = 0; i < steps; i++) {
-            if (motor == StepperList.STP1 || motor == StepperList.Both) doStep(1, dir)
-            if (motor == StepperList.STP2 || motor == StepperList.Both) doStep(2, dir)
-            control.waitMicros(_rpmDelay)
+            if (motor == 1 || motor == 3) doStep(1, dir);
+            if (motor == 2 || motor == 3) doStep(2, dir);
+
+            // Give the I2C bus and the motor time to breathe
+            control.waitMicros(_rpmDelay);
         }
+        // Crucial: Release the pins so the motor doesn't stay "locked" and drain power
+        stopAll();
     }
 
     /**
