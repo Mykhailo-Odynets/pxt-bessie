@@ -105,4 +105,18 @@ namespace StepperMotorPlus {
         control.waitMicros(5000);
         i2cwrite(PCA9685_ADDRESS, MODE1, oldmode | 0xa1);
     }
+
+    /**
+     * Stepper run
+     * @param index Stepper; eg: PCAmotor.Steppers.STPM1
+     * @param dir is forward direction; eg: true
+    */
+    //% blockId=magicbit_stepper_start block="Stepper 28BYJ-48|%index|start"
+    //% weight=92
+    export function StepperStart(index: Steppers, dir: boolean = true): void {
+        if (!initialized) {
+            initPCA9685()
+        }
+        setStepper(index, dir);
+    }
 }
