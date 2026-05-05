@@ -4,133 +4,105 @@
  */
 //% color="#228b22" icon="\uf085" block="Stepper Plus"
 namespace StepperMotorPlus {
-    const ADDRESS = 0x40
+    const PCA9685_ADDRESS = 0x40
     const MODE1 = 0x00
-    const PRESCALE = 0xFE
     const LED0_ON_L = 0x06
+    const PRESCALE = 0xFE
 
-    // 28BYJ-48 Half-Step Mode Constant
-    const STEPS_PER_REV = 4096
+    const STP_CHA_L = 2047
+    const STP_CHA_H = 4095
 
-    let _rpmDelay = 2000 // Microseconds between steps
-    let _initialized = false
-    let _phase1 = 0
-    let _phase2 = 0
+    const STP_CHB_L = 1
+    const STP_CHB_H = 2047
 
-    export enum StepperList {
-        //% block="Stepper 1"
-        STP1 = 1,
-        //% block="Stepper 2"
-        STP2 = 2,
-        //% block="Both"
-        Both = 3
+    const STP_CHC_L = 1023
+    const STP_CHC_H = 3071
+
+    const STP_CHD_L = 3071
+    const STP_CHD_H = 1023
+
+    let initialized = false
+
+    export enum Steppers {
+        //% block="STPM1"
+        STP1 = 0x1,
+        //% block="STPM2"
+        STP2 = 0x2
     }
-
-    // Full-Step sequence for maximum speed
-    const stepSeq = [
-        [1, 0, 0, 0], [1, 1, 0, 0], [0, 1, 0, 0], [0, 1, 1, 0],
-        [0, 0, 1, 0], [0, 0, 1, 1], [0, 0, 0, 1], [1, 0, 0, 1]
-    ]
-
-    function i2cWrite(reg: number, value: number) {
+    function i2cwrite(addr: number, reg: number, value: number) {
         let buf = pins.createBuffer(2)
         buf[0] = reg
         buf[1] = value
-        pins.i2cWriteBuffer(ADDRESS, buf)
+        pins.i2cWriteBuffer(addr, buf)
     }
-
+    function i2cread(addr: number, reg: number) {
+        pins.i2cWriteNumber(addr, reg, NumberFormat.UInt8BE);
+        let val = pins.i2cReadNumber(addr, NumberFormat.UInt8BE);
+        return val;
+    }
     function setPwm(channel: number, on: number, off: number): void {
+        if (channel < 0 || channel > 15)
+            return;
+        //serial.writeValue("ch", channel)
+        //serial.writeValue("on", on)
+        //serial.writeValue("off", off)
+
         let buf = pins.createBuffer(5);
         buf[0] = LED0_ON_L + 4 * channel;
         buf[1] = on & 0xff;
         buf[2] = (on >> 8) & 0xff;
         buf[3] = off & 0xff;
         buf[4] = (off >> 8) & 0xff;
-        pins.i2cWriteBuffer(ADDRESS, buf);
+        pins.i2cWriteBuffer(PCA9685_ADDRESS, buf);
     }
-
-    function init(): void {
-        if (_initialized) return
-        // pins.i2cSetFastMode(true) // Set I2C to 400kHz
-        i2cWrite(MODE1, 0x00)
-        let oldmode = pins.i2cReadNumber(ADDRESS, NumberFormat.UInt8BE)
-        i2cWrite(MODE1, (oldmode & 0x7F) | 0x10) // sleep
-        i2cWrite(PRESCALE, 121) // ~50Hz
-        i2cWrite(MODE1, oldmode)
-        control.waitMicros(5000)
-        i2cWrite(MODE1, oldmode | 0xa1)
-        _initialized = true
-    }
-
-    function doStep(m: number, dir: number) {
-        // MAGICBIT SPECIFIC PIN MAPPING:
-        // Stepper 1 uses PCA9685 pins 0, 2, 1, 3
-        // Stepper 2 uses PCA9685 pins 4, 6, 5, 7
-        let pinsMap = (m == 1) ? [0, 1, 2, 3] : [4, 5, 6, 7]
-
-        if (m == 1) {
-            _phase1 = (_phase1 + dir + 8) % 8
-            let p = stepSeq[_phase1]
-            for (let i = 0; i < 4; i++) setPwm(pinsMap[i], 0, p[i] ? 4095 : 0)
+    function setStepper(index: number, dir: boolean): void {
+        if (index == 1) {
+            if (dir) {
+                setPwm(0, STP_CHA_L, STP_CHA_H);
+                setPwm(2, STP_CHB_L, STP_CHB_H);
+                setPwm(1, STP_CHC_L, STP_CHC_H);
+                setPwm(3, STP_CHD_L, STP_CHD_H);
+            } else {
+                setPwm(3, STP_CHA_L, STP_CHA_H);
+                setPwm(1, STP_CHB_L, STP_CHB_H);
+                setPwm(2, STP_CHC_L, STP_CHC_H);
+                setPwm(0, STP_CHD_L, STP_CHD_H);
+            }
         } else {
-            _phase2 = (_phase2 + dir + 8) % 8
-            let p = stepSeq[_phase2]
-            for (let i = 0; i < 4; i++) setPwm(pinsMap[i], 0, p[i] ? 4095 : 0)
+            if (dir) {
+                setPwm(4, STP_CHA_L, STP_CHA_H);
+                setPwm(6, STP_CHB_L, STP_CHB_H);
+                setPwm(5, STP_CHC_L, STP_CHC_H);
+                setPwm(7, STP_CHD_L, STP_CHD_H);
+            } else {
+                setPwm(7, STP_CHA_L, STP_CHA_H);
+                setPwm(5, STP_CHB_L, STP_CHB_H);
+                setPwm(6, STP_CHC_L, STP_CHC_H);
+                setPwm(4, STP_CHD_L, STP_CHD_H);
+            }
         }
     }
-
-    /**
-     * Set motor speed (RPM). 
-     * For 28BYJ-48, 2-8 RPM is the "Power Zone" where it has the most torque.
-     */
-    //% block="set %motor speed to %rpm RPM"
-    export function setSpeed(rpm: number) {
-        // We cap the speed at 10 RPM for this test to ensure it doesn't stall
-        let safeRpm = Math.clamp(1, 10, rpm);
-        // Increase the delay to give the coils more time to energize
-        _rpmDelay = 60000000 / (safeRpm * STEPS_PER_REV);
-    }
-
-    /**
-     * Rotate motor(s) by degrees
-     */
-    //% block="rotate %motor %degrees degrees"
-    export function rotateDegrees(motor: StepperList, degrees: number) {
-        init();
-        // 4096 steps is one full circle. 
-        // We use Math.ceil to make sure we don't lose fractional steps
-        let steps = Math.ceil(Math.abs((degrees / 360) * STEPS_PER_REV));
-        let dir = degrees > 0 ? 1 : -1;
-
-        for (let i = 0; i < steps; i++) {
-            if (motor == 1 || motor == 3) doStep(1, dir);
-            if (motor == 2 || motor == 3) doStep(2, dir);
-
-            // Give the I2C bus and the motor time to breathe
-            control.waitMicros(_rpmDelay);
+    function initPCA9685(): void {
+        i2cwrite(PCA9685_ADDRESS, MODE1, 0x00)
+        setFreq(50);
+        for (let idx = 0; idx < 16; idx++) {
+            setPwm(idx, 0, 0);
         }
-        // Crucial: Release the pins so the motor doesn't stay "locked" and drain power
-        stopAll();
+        initialized = true
     }
-
-    /**
-     * Move motor(s) forward/backward by distance in centimeters.
-     */
-    //% block="move %motor %cm cm | wheel diameter %wheelDiam cm"
-    //% weight=80
-    export function travelDistance(motor: StepperList, cm: number, wheelDiam: number) {
-        let circumference = Math.PI * wheelDiam
-        let degrees = (cm / circumference) * 360
-        rotateDegrees(motor, degrees)
-    }
-
-    /**
-     * Cuts power to all stepper coils to save battery and prevent heat.
-     */
-    //% block="stop all motors"
-    //% weight=70
-    export function stopAll() {
-        init()
-        for (let i = 0; i < 16; i++) setPwm(i, 0, 0)
+    function setFreq(freq: number): void {
+        // Constrain the frequency
+        let prescaleval = 25000000;
+        prescaleval /= 4096;
+        prescaleval /= freq;
+        prescaleval -= 1;
+        let prescale = prescaleval; //Math.Floor(prescaleval + 0.5);
+        let oldmode = i2cread(PCA9685_ADDRESS, MODE1);
+        let newmode = (oldmode & 0x7F) | 0x10; // sleep
+        i2cwrite(PCA9685_ADDRESS, MODE1, newmode); // go to sleep
+        i2cwrite(PCA9685_ADDRESS, PRESCALE, prescale); // set the prescaler
+        i2cwrite(PCA9685_ADDRESS, MODE1, oldmode);
+        control.waitMicros(5000);
+        i2cwrite(PCA9685_ADDRESS, MODE1, oldmode | 0xa1);
     }
 }
