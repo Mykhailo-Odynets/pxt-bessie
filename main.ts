@@ -66,7 +66,7 @@ namespace StepperMotorPlus {
         // MAGICBIT SPECIFIC PIN MAPPING:
         // Stepper 1 uses PCA9685 pins 0, 2, 1, 3
         // Stepper 2 uses PCA9685 pins 4, 6, 5, 7
-        let pinsMap = (m == 1) ? [0, 2, 1, 3] : [4, 6, 5, 7]
+        let pinsMap = (m == 1) ? [0, 1, 2, 3] : [4, 5, 6, 7]
 
         if (m == 1) {
             _phase1 = (_phase1 + dir + 8) % 8
