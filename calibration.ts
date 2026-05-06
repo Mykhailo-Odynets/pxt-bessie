@@ -4,7 +4,7 @@ namespace Calibration {
 
     // mm
     const DEFAULT_WHEEL = 65;
-    const DEFAULT_CAR = 140;
+    const DEFAULT_CAR = 124;
 
     export function setWheelDiameter(value: number) : void {
         settings.writeNumber(WHEEL_DIAMETER_KEY, value);

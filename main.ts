@@ -25,17 +25,25 @@ namespace StepperCar {
 
     // distance - in centimeters
     // diameter - in milimeters
-    export function CarMove(distance: number, diameter: number) : void {
-        PCAmotor.StpCarMove(distance, diameter)
+    export function CarMove(distance: number, diameter?: number) : void {
+        PCAmotor.StpCarMove(distance, diameter ? diameter : Calibration.getWheelDiameter())
     }
 
     // degree - arc degree to rotate right
     // wD - wheel diameter
     // cD - car diameter (distance between wheels centers)
-    export function CarRotate(degree: number, wD: number, cD: number) : void {
+    export function CarRotate(degree: number, wD?: number, cD?: number) : void {
+        wD = wD ? wD : Calibration.getWheelDiameter()
+        cD = cD ? cD : Calibration.getCarDiameter()
+
         const degreeToRotate = (degree * cD) / (2 * Math.PI * wD)
 
         PCAmotor.StepperDegree(PCAmotor.Steppers.STPM1, degreeToRotate)
         PCAmotor.StepperDegree(PCAmotor.Steppers.STPM2, -degreeToRotate)
+    }
+
+    // inputs - lenth that car drove and what it should have driven
+    export function calibrateWheelSize(target: number, reality: number) {
+        Calibration.setWheelDiameter(Calibration.getWheelDiameter() * target)
     }
 }
