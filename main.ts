@@ -5,7 +5,8 @@ namespace StepperCar {
         Both
     }
 
-    export function MotorStart(motor: Motors, direction: boolean) : void {
+    // direction - is forward, default true
+    export function MotorStart(motor: Motors, direction: boolean = true) : void {
         if (motor == Motors.M1 || motor == Motors.Both) {
             PCAmotor.StepperStart(PCAmotor.Steppers.STPM1, direction);
         }
@@ -20,6 +21,15 @@ namespace StepperCar {
         }
         if (motor == Motors.M2 || motor == Motors.Both) {
             PCAmotor.StepperStop(PCAmotor.Steppers.STPM2);
+        }
+    }
+
+    export function MotorRotate(motor: Motors, degree: number): void {
+        if (motor == Motors.M1 || motor == Motors.Both) {
+            PCAmotor.StepperDegree(PCAmotor.Steppers.STPM1, degree);
+        }
+        if (motor == Motors.M2 || motor == Motors.Both) {
+            PCAmotor.StepperDegree(PCAmotor.Steppers.STPM2, degree)
         }
     }
 
@@ -40,10 +50,5 @@ namespace StepperCar {
 
         PCAmotor.StepperDegree(PCAmotor.Steppers.STPM1, degreeToRotate)
         PCAmotor.StepperDegree(PCAmotor.Steppers.STPM2, -degreeToRotate)
-    }
-
-    // inputs - lenth that car drove and what it should have driven
-    export function calibrateWheelSize(target: number, reality: number) {
-        Calibration.setWheelDiameter(Calibration.getWheelDiameter() * target)
     }
 }
