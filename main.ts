@@ -80,27 +80,29 @@ namespace StepperCar {
         const circumference = Math.PI * (diameter ? diameter : Calibration.getWheelDiameter());
         const degreeToRotate = (distance * 10 / circumference) * 360;
 
-        CarRotate(degreeToRotate, true)
+        CarRotate(degreeToRotate, false);
     }
 
     /**
      * Rotates the car in place by a specific degree.
      * @param degree degrees to turn the car (positive for right, negative for left)
-     * @param isForward internal use: if true, moves both wheels same direction
+     * @param spinInPlace internal use: if false, moves both wheels same direction
      */
     //% blockId=stepper_car_rotate block="car rotate %degree degrees"
     //% isForward.defl=false
     //% isForward.hidden=true
     //% weight=95
-    export function CarRotate(degree: number, isForward = false) : void {
-        const degreeToRotate = isForward ? -degree : degree * Calibration.getCarDiameter() / Calibration.getWheelDiameter();
+    export function CarRotate(degree: number, spinInPlace = true) : void {
+        const degreeToRotate = spinInPlace ? degree * Calibration.getCarDiameter() / Calibration.getWheelDiameter() : degree;
+
+        const m1Direction = spinInPlace ? -1 : 1;
 
         // Starts the first motor in the background
         control.inBackground(() => {
-            MotorRotate(Motors.M1, isForward ? degreeToRotate : -degreeToRotate)
+            MotorRotate(Motors.M1, degreeToRotate * m1Direction);
         });
 
-        MotorRotate(Motors.M2, degreeToRotate)
+        MotorRotate(Motors.M2, degreeToRotate);
 
         MotorStop(Motors.Both);
     }
