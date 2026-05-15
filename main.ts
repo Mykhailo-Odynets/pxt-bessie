@@ -21,11 +21,13 @@ namespace StepperCar {
     //% direction.shadow="toggleOnOff"
     //% weight=90
     export function MotorStart(motor: Motors, direction: boolean = true) : void {
+        direction = !direction;
+        
         if (motor === Motors.M1 || motor === Motors.Both) {
-            PCAmotor.StepperStart(PCAmotor.Steppers.STPM2, !direction);
+            PCAmotor.StepperStart(PCAmotor.Steppers.STPM1, direction);
         }
         if (motor === Motors.M2 || motor === Motors.Both) {
-            PCAmotor.StepperStart(PCAmotor.Steppers.STPM1, direction);
+            PCAmotor.StepperStart(PCAmotor.Steppers.STPM2, direction);
         }
     }
 
@@ -37,10 +39,10 @@ namespace StepperCar {
     //% weight=80
     export function MotorStop(motor: Motors) : void {
         if (motor === Motors.M1 || motor === Motors.Both) {
-            PCAmotor.StepperStop(PCAmotor.Steppers.STPM2);
+            PCAmotor.StepperStop(PCAmotor.Steppers.STPM1);
         }
         if (motor === Motors.M2 || motor === Motors.Both) {
-            PCAmotor.StepperStop(PCAmotor.Steppers.STPM1);
+            PCAmotor.StepperStop(PCAmotor.Steppers.STPM2);
         }
     }
 
@@ -54,11 +56,13 @@ namespace StepperCar {
     export function MotorRotate(motor: Motors, degree: number): void {
         if (motor === Motors.Both) return;
 
+        degree = -degree;
+
         if (motor === Motors.M1) {
-            PCAmotor.StepperDegree(PCAmotor.Steppers.STPM2, -degree);
+            PCAmotor.StepperDegree(PCAmotor.Steppers.STPM1, degree);
         }
         if (motor === Motors.M2) {
-            PCAmotor.StepperDegree(PCAmotor.Steppers.STPM1, degree);
+            PCAmotor.StepperDegree(PCAmotor.Steppers.STPM2, degree);
         }
         
         // Doesn't turn off automatically
