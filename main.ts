@@ -9,7 +9,7 @@ namespace StepperCar {
         //% block="left (M2)"
         M2,
         //% block="both"
-        Both
+        Both,
     }
 
     /**
@@ -20,7 +20,7 @@ namespace StepperCar {
     //% blockId=stepper_start block="start motor %motor | direction forward %direction"
     //% direction.shadow="toggleOnOff"
     //% weight=90
-    export function MotorStart(motor: Motors, direction: boolean = true) : void {
+    export function MotorStart(motor: Motors, direction: boolean = true): void {
         if (motor === Motors.M1 || motor === Motors.Both) {
             PCAmotor.StepperStart(PCAmotor.Steppers.STPM2, direction);
         }
@@ -35,7 +35,7 @@ namespace StepperCar {
      */
     //% blockId=stepper_stop block="stop motor %motor"
     //% weight=80
-    export function MotorStop(motor: Motors) : void {
+    export function MotorStop(motor: Motors): void {
         if (motor === Motors.M1 || motor === Motors.Both) {
             PCAmotor.StepperStop(PCAmotor.Steppers.STPM2);
         }
@@ -60,7 +60,7 @@ namespace StepperCar {
         if (motor === Motors.M2) {
             PCAmotor.StepperDegree(PCAmotor.Steppers.STPM1, degree);
         }
-        
+
         // Doesn't turn off automatically
         MotorStop(motor);
     }
@@ -73,12 +73,12 @@ namespace StepperCar {
     //% blockId=stepper_car_move block="car move %distance cm || wheel diameter %diameter mm"
     //% expandableArgumentMode="toggle"
     //% weight=100
-    export function CarMove(distance: number, diameter?: number) : void {
+    export function CarMove(distance: number, diameter?: number): void {
         // Issue: wrong motor direction, calculates distance based on delay
-        // PCAmotor.StpCarMove(distance, diameter ? diameter : Calibration.getWheelDiameter());
+        // PCAmotor.StpCarMove(distance, diameter ? diameter : StepperCar.getWheelDiameter());
 
-        const circumference = Math.PI * (diameter ? diameter : Calibration.getWheelDiameter());
-        const degreeToRotate = (distance * 10 / circumference) * 360;
+        const circumference = Math.PI * (diameter ? diameter : StepperCar.getWheelDiameter());
+        const degreeToRotate = ((distance * 10) / circumference) * 360;
 
         CarRotate(degreeToRotate, false);
     }
@@ -92,8 +92,10 @@ namespace StepperCar {
     //% isForward.defl=false
     //% isForward.hidden=true
     //% weight=95
-    export function CarRotate(degree: number, spinInPlace = true) : void {
-        const degreeToRotate = spinInPlace ? degree * Calibration.getCarDiameter() / Calibration.getWheelDiameter() : degree;
+    export function CarRotate(degree: number, spinInPlace = true): void {
+        const degreeToRotate = spinInPlace
+            ? (degree * StepperCar.getCarDiameter()) / StepperCar.getWheelDiameter()
+            : degree;
 
         const m1Direction = spinInPlace ? -1 : 1;
 

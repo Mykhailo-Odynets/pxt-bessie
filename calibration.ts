@@ -1,10 +1,9 @@
 /**
  * Calibration tools for wheel and car dimensions
  */
-//% color="#d2691e" icon="\uf0ad" weight=90
-namespace Calibration {
-    const WHEEL_DIAMETER_KEY = "WHEEL_DIAMETER"
-    const CAR_DIAMETER_KEY = "CAR_DIAMETER"
+namespace StepperCar {
+    const WHEEL_DIAMETER_KEY = "WHEEL_DIAMETER";
+    const CAR_DIAMETER_KEY = "CAR_DIAMETER";
 
     // For calibration
     const DISTANCE_MM = 1000;
@@ -22,8 +21,8 @@ namespace Calibration {
      * @param value diameter in mm (e.g., 65)
      */
     //% blockId=calib_set_wheel block="set wheel diameter to %value mm"
-    //% weight=100
-    export function setWheelDiameter(value: number) : void {
+    //% group="Calibration" weight=100
+    export function setWheelDiameter(value: number): void {
         settings.writeNumber(WHEEL_DIAMETER_KEY, value);
     }
 
@@ -33,7 +32,7 @@ namespace Calibration {
      * @param rotations the number of full rotations the wheels made
      */
     //% blockId=calib_calc_wheel_dist block="calculate wheel diameter: distance %distMm mm | wheel rotations %rotations"
-    //% weight=96 group="Manual Calibration"
+    //% advanced=true weight=96
     export function setWheelDiameterFromMeasuredDistance(distMm: number, rotations: number) {
         let circumference = distMm / rotations;
         let diameter = circumference / Math.PI;
@@ -44,6 +43,7 @@ namespace Calibration {
      * Get the currently saved wheel diameter.
      */
     //% blockId=calib_get_wheel block="wheel diameter (mm)"
+    //% blockHidden=true
     //% weight=90
     export function getWheelDiameter(): number {
         return settings.readNumber(WHEEL_DIAMETER_KEY) || DEFAULT_WHEEL;
@@ -54,8 +54,8 @@ namespace Calibration {
      * @param value diameter in mm (e.g., 125)
      */
     //% blockId=calib_set_car block="set car diameter to %value mm"
-    //% weight=80
-    export function setCarDiameter(value: number) : void {
+    //% group="Calibration" weight=80
+    export function setCarDiameter(value: number): void {
         settings.writeNumber(CAR_DIAMETER_KEY, value);
     }
 
@@ -65,7 +65,7 @@ namespace Calibration {
      * @param wheelRotations how many full rotations the wheels made to achieve that
      */
     //% blockId=calib_calc_car_dist block="calculate car diameter: car spins %carRotations | wheel rotations %wheelRotations"
-    //% weight=76 group="Manual Calibration"
+    //% advanced=true weight=76
     export function setCarDiameterFromWheelRotations(carRotations: number, wheelRotations: number) {
         if (carRotations <= 0) return;
 
@@ -80,6 +80,7 @@ namespace Calibration {
      * Get the currently saved car diameter.
      */
     //% blockId=calib_get_car block="car diameter (mm)"
+    //% blockHidden=true
     //% weight=70
     export function getCarDiameter(): number {
         return settings.readNumber(CAR_DIAMETER_KEY) || DEFAULT_CAR;
@@ -89,7 +90,7 @@ namespace Calibration {
      * Reset all calibration settings to defaults.
      */
     //% blockId=calib_clear block="clear all calibration"
-    //% weight=10
+    //% advanced=true weight=10
     export function clear(): void {
         settings.remove(WHEEL_DIAMETER_KEY);
         settings.remove(CAR_DIAMETER_KEY);
@@ -101,22 +102,22 @@ namespace Calibration {
      * Step 1: Start driving forward for wheel calibration.
      */
     //% blockId=calib_start_wheel block="start wheel calibration"
-    //% group="Wheel Calibration" weight=60
+    //% group="Calibration" weight=60
     export function startWheelCalibration() {
         startTime = control.millis();
 
-        StepperCar.MotorStart(StepperCar.Motors.Both)
+        StepperCar.MotorStart(StepperCar.Motors.Both);
     }
 
     /**
      * Step 2: Stop driving at exactly 1 meter to save wheel diameter.
      */
     //% blockId=calib_stop_wheel block="stop wheel calibration (at 1m)"
-    //% group="Wheel Calibration" weight=50
+    //% group="Calibration" weight=50
     export function stopWheelCalibration() {
         if (startTime == 0) return;
 
-        StepperCar.MotorStop(StepperCar.Motors.Both)
+        StepperCar.MotorStop(StepperCar.Motors.Both);
 
         let elapsed = (control.millis() - startTime) / 1000;
         startTime = 0;
@@ -139,7 +140,7 @@ namespace Calibration {
      * Step 1: Start spinning in place for car calibration.
      */
     //% blockId=calib_start_car block="start car calibration"
-    //% group="Car Calibration" weight=40
+    //% group="Calibration" weight=40
     export function startCarCalibration() {
         startTime = control.millis();
 
@@ -151,7 +152,7 @@ namespace Calibration {
      * Step 2: Stop spinning after exactly one full 360 degree turn.
      */
     //% blockId=calib_stop_car block="stop car calibration (at 360°)"
-    //% group="Car Calibration" weight=30
+    //% group="Calibration" weight=30
     export function stopCarCalibration() {
         if (startTime == 0) return;
 
