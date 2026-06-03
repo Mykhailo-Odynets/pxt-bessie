@@ -8,7 +8,7 @@ namespace StepperCar {
     // For calibration
     const DISTANCE_MM = 1000;
     const STEPS_PER_REV = 4096;
-    const STEPS_PER_SEC = 200;
+    const STEPS_PER_SEC = 400;
 
     let startTime = 0;
 

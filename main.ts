@@ -4,9 +4,9 @@
 //% color="#228b22" icon="\uf1b9" weight=100
 namespace StepperCar {
     export enum Motors {
-        //% block="right (M1)"
+        //% block="left (M1)"
         M1,
-        //% block="left (M2)"
+        //% block="right (M2)"
         M2,
         //% block="both"
         Both,
@@ -22,10 +22,10 @@ namespace StepperCar {
     //% weight=90
     export function MotorStart(motor: Motors, direction: boolean = true): void {
         if (motor === Motors.M1 || motor === Motors.Both) {
-            PCAmotor.StepperStart(PCAmotor.Steppers.STPM2, direction);
+            PCAmotor.StepperStart(PCAmotor.Steppers.STPM1, direction);
         }
         if (motor === Motors.M2 || motor === Motors.Both) {
-            PCAmotor.StepperStart(PCAmotor.Steppers.STPM1, direction);
+            PCAmotor.StepperStart(PCAmotor.Steppers.STPM2, direction);
         }
     }
 
@@ -37,10 +37,10 @@ namespace StepperCar {
     //% weight=80
     export function MotorStop(motor: Motors): void {
         if (motor === Motors.M1 || motor === Motors.Both) {
-            PCAmotor.StepperStop(PCAmotor.Steppers.STPM2);
+            PCAmotor.StepperStop(PCAmotor.Steppers.STPM1);
         }
         if (motor === Motors.M2 || motor === Motors.Both) {
-            PCAmotor.StepperStop(PCAmotor.Steppers.STPM1);
+            PCAmotor.StepperStop(PCAmotor.Steppers.STPM2);
         }
     }
 
@@ -55,10 +55,10 @@ namespace StepperCar {
         if (motor === Motors.Both) return;
 
         if (motor === Motors.M1) {
-            PCAmotor.StepperDegree(PCAmotor.Steppers.STPM2, degree);
+            PCAmotor.StepperDegree(PCAmotor.Steppers.STPM1, degree);
         }
         if (motor === Motors.M2) {
-            PCAmotor.StepperDegree(PCAmotor.Steppers.STPM1, degree);
+            PCAmotor.StepperDegree(PCAmotor.Steppers.STPM2, degree);
         }
 
         // Doesn't turn off automatically
@@ -101,10 +101,10 @@ namespace StepperCar {
 
         // Starts the first motor in the background
         control.inBackground(() => {
-            MotorRotate(Motors.M1, degreeToRotate * m1Direction);
+            MotorRotate(Motors.M2, degreeToRotate * m1Direction);
         });
 
-        MotorRotate(Motors.M2, degreeToRotate);
+        MotorRotate(Motors.M1, degreeToRotate);
 
         MotorStop(Motors.Both);
     }
