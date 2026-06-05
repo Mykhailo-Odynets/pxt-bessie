@@ -6,7 +6,6 @@ namespace StepperCar {
     const CAR_DIAMETER_KEY = "CAR_DIAMETER";
 
     // For calibration
-    const DISTANCE_MM = 1000;
     const STEPS_PER_REV = 4096;
     const STEPS_PER_SEC = 400;
 
@@ -110,11 +109,12 @@ namespace StepperCar {
     }
 
     /**
-     * Step 2: Stop driving at exactly 1 meter to save wheel diameter.
+     * Step 2: Stop driving at the specified distance to calculate and save the wheel diameter.
+     * @param distance The distance the car has driven in millimeters, eg: 1000
      */
-    //% blockId=calib_stop_wheel block="stop wheel calibration (at 1m)"
+    //% blockId=calib_stop_wheel block="stop wheel calibration at $distance mm"
     //% group="Calibration" weight=50
-    export function stopWheelCalibration() {
+    export function stopWheelCalibration(distance: number = 1000) {
         if (startTime == 0) return;
 
         StepperCar.MotorStop(StepperCar.Motors.Both);
@@ -127,7 +127,7 @@ namespace StepperCar {
         let revolutions = totalSteps / STEPS_PER_REV;
 
         if (revolutions > 0) {
-            let circumference = DISTANCE_MM / revolutions;
+            let circumference = distance / revolutions;
             let diameter = circumference / Math.PI;
 
             setWheelDiameter(diameter);
@@ -149,11 +149,12 @@ namespace StepperCar {
     }
 
     /**
-     * Step 2: Stop spinning after exactly one full 360 degree turn.
+     * Step 2: Stop spinning after the specified angle to calculate and save the car diameter.
+     * @param angle The angle the car just spun in degrees, eg: 360
      */
-    //% blockId=calib_stop_car block="stop car calibration (at 360°)"
+    //% blockId=calib_stop_car block="stop car calibration at $angle degrees"
     //% group="Calibration" weight=30
-    export function stopCarCalibration() {
+    export function stopCarCalibration(angle: number = 360) {
         if (startTime == 0) return;
 
         StepperCar.MotorStop(StepperCar.Motors.Both);
@@ -167,7 +168,7 @@ namespace StepperCar {
 
         if (wheelRevolutions > 0) {
             // Formula: Car Diameter = Wheel Revolutions * Wheel Diameter
-            let carDiameter = wheelRevolutions * getWheelDiameter();
+            let carDiameter = (wheelRevolutions * getWheelDiameter()) * (360 / angle);
 
             setCarDiameter(carDiameter);
         }
