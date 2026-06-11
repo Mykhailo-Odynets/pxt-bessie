@@ -74,9 +74,6 @@ namespace StepperCar {
     //% expandableArgumentMode="toggle"
     //% weight=100
     export function CarMove(distance: number, diameter?: number): void {
-        // Issue: wrong motor direction, calculates distance based on delay
-        // PCAmotor.StpCarMove(distance, diameter ? diameter : StepperCar.getWheelDiameter());
-
         const circumference = Math.PI * (diameter ? diameter : StepperCar.getWheelDiameter());
         const degreeToRotate = ((distance * 10) / circumference) * 360;
 
@@ -89,8 +86,8 @@ namespace StepperCar {
      * @param spinInPlace internal use: if false, moves both wheels same direction
      */
     //% blockId=stepper_car_rotate block="car rotate %degree degrees"
-    //% isForward.defl=false
-    //% isForward.hidden=true
+    //% spinInPlace.defl=false
+    //% spinInPlace.hidden=true
     //% weight=95
     export function CarRotate(degree: number, spinInPlace = true): void {
         const degreeToRotate = spinInPlace
@@ -99,13 +96,18 @@ namespace StepperCar {
 
         const m1Direction = spinInPlace ? -1 : 1;
 
+        let isBgMotorFinished = false;
+
         // Starts the first motor in the background
         control.inBackground(() => {
             MotorRotate(Motors.M2, degreeToRotate * m1Direction);
+            isBgMotorFinished = true;
         });
 
         MotorRotate(Motors.M1, degreeToRotate);
 
-        MotorStop(Motors.Both);
+        while (!isBgMotorFinished) {
+            basic.pause(1);
+        }
     }
 }
