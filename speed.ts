@@ -23,13 +23,13 @@ namespace StepperCar {
      * Increasing this value will make the stepper motors run faster.
      * * ⚠️ WARNING: Do not use this if you have standard RC servos connected!
      * Changing the frequency away from 50 Hz can cause servos to overheat and burn out.
-     * * @param freq The target frequency in Hz (between 0 and 150), eg: 50
+     * * @param freq The target frequency in Hz (between 1 and 150), eg: 50
      */
     //% blockId=set_motor_freq block="set motor frequency to $freq Hz"
     //% advanced=true weight=100
     //% group="Speed"
     export function setFrequency(freq: number) {
-        if (freq < 0) freq = 0;
+        if (freq < 1) freq = 1;
         else if (freq > 150) freq = 150;
 
         MotorStop(Motors.Both);
