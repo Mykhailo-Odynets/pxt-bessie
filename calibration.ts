@@ -89,7 +89,7 @@ namespace StepperCar {
      */
     //% blockId=calib_clear block="clear all calibration"
     //% advanced=true weight=10
-    export function clear(): void {
+    export function clearCalibration(): void {
         settings.remove(WHEEL_DIAMETER_KEY);
         settings.remove(CAR_DIAMETER_KEY);
     }
