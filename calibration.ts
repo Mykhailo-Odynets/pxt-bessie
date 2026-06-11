@@ -6,8 +6,8 @@ namespace StepperCar {
     const CAR_DIAMETER_KEY = "CAR_DIAMETER";
 
     // For calibration
-    const STEPS_PER_REV = 4096;
-    const STEPS_PER_SEC = 400;
+    const STEPS_PER_REV = 2048;
+    let STEPS_PER_SEC = 4 * StepperCar.getFrequency();
 
     let startTime = 0;
 
