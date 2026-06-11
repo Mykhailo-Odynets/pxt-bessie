@@ -7,7 +7,6 @@ namespace StepperCar {
 
     // For calibration
     const STEPS_PER_REV = 2048;
-    let STEPS_PER_SEC = 4 * StepperCar.getFrequency();
 
     let startTime = 0;
 
@@ -105,7 +104,7 @@ namespace StepperCar {
     export function startWheelCalibration() {
         startTime = control.millis();
 
-        StepperCar.MotorStart(StepperCar.Motors.Both);
+        MotorStart(Motors.Both);
     }
 
     /**
@@ -117,13 +116,15 @@ namespace StepperCar {
     export function stopWheelCalibration(distance: number = 1000) {
         if (startTime == 0) return;
 
-        StepperCar.MotorStop(StepperCar.Motors.Both);
+        MotorStop(Motors.Both);
 
         let elapsed = (control.millis() - startTime) / 1000;
         startTime = 0;
 
+        let stepsPerSec = getFrequency() * 4;
+
         // Math: Steps -> Revolutions -> Circumference -> Diameter
-        let totalSteps = elapsed * STEPS_PER_SEC;
+        let totalSteps = elapsed * stepsPerSec;
         let revolutions = totalSteps / STEPS_PER_REV;
 
         if (revolutions > 0) {
@@ -144,8 +145,8 @@ namespace StepperCar {
     export function startCarCalibration() {
         startTime = control.millis();
 
-        StepperCar.MotorStart(StepperCar.Motors.M1, true);
-        StepperCar.MotorStart(StepperCar.Motors.M2, false);
+        MotorStart(Motors.M1, true);
+        MotorStart(Motors.M2, false);
     }
 
     /**
@@ -157,13 +158,15 @@ namespace StepperCar {
     export function stopCarCalibration(angle: number = 360) {
         if (startTime == 0) return;
 
-        StepperCar.MotorStop(StepperCar.Motors.Both);
+        MotorStop(Motors.Both);
 
         let elapsed = (control.millis() - startTime) / 1000;
         startTime = 0;
 
+        let stepsPerSec = getFrequency() * 4;
+
         // Calculate how many times the wheel turned during that car spin
-        let totalSteps = elapsed * STEPS_PER_SEC;
+        let totalSteps = elapsed * stepsPerSec;
         let wheelRevolutions = totalSteps / STEPS_PER_REV;
 
         if (wheelRevolutions > 0) {

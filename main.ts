@@ -74,7 +74,7 @@ namespace StepperCar {
     //% expandableArgumentMode="toggle"
     //% weight=100
     export function CarMove(distance: number, diameter?: number): void {
-        const circumference = Math.PI * (diameter ? diameter : StepperCar.getWheelDiameter());
+        const circumference = Math.PI * (diameter ? diameter : getWheelDiameter());
         const degreeToRotate = ((distance * 10) / circumference) * 360;
 
         CarRotate(degreeToRotate, false);
@@ -91,7 +91,7 @@ namespace StepperCar {
     //% weight=95
     export function CarRotate(degree: number, spinInPlace = true): void {
         const degreeToRotate = spinInPlace
-            ? (degree * StepperCar.getCarDiameter()) / StepperCar.getWheelDiameter()
+            ? (degree * getCarDiameter()) / getWheelDiameter()
             : degree;
 
         const m1Direction = spinInPlace ? -1 : 1;

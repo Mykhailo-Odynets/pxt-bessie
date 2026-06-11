@@ -21,11 +21,14 @@ namespace StepperCar {
     /**
      * Changes the hardware frequency of the motors (the default is 50 Hz).
      * Increasing this value will make the stepper motors run faster.
-     * @param freq The target frequency in Hz (between 0 and 100), eg: 100
+     * * ⚠️ WARNING: Do not use this if you have standard RC servos connected!
+     * Changing the frequency away from 50 Hz can cause servos to overheat and burn out.
+     * * @param freq The target frequency in Hz (between 0 and 100), eg: 100
      */
     //% blockId=set_motor_freq block="set motor frequency to $freq Hz"
     //% advanced=true weight=100
     export function setFrequency(freq: number) {
+        MotorStop(Motors.Both);
         settings.writeNumber(FREQUENCY_KEY, freq);
 
         let prescaleval = 25000000 / 4096 / freq - 1;
