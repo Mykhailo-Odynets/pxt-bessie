@@ -11,6 +11,7 @@
     "files": [
         "main.ts",
         "calibration.ts",
+        "speed.ts",
         "README.md"
     ],
     "testFiles": [
