@@ -27,6 +27,7 @@ namespace StepperCar {
      */
     //% blockId=set_motor_freq block="set motor frequency to $freq Hz"
     //% advanced=true weight=100
+    //% group="Speed"
     export function setFrequency(freq: number) {
         MotorStop(Motors.Both);
         settings.writeNumber(FREQUENCY_KEY, freq);
@@ -51,7 +52,8 @@ namespace StepperCar {
      * Returns the default frequency if it has not been modified.
      */
     //% blockId=get_motor_freq block="motor frequency"
-    //% advanced=true weight=90
+    //% blockHidden=true 
+    //% weight=90
     export function getFrequency(): number {
         return settings.readNumber(FREQUENCY_KEY) || DEFAULT_FREQUENCY;
     }

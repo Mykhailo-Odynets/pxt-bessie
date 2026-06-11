@@ -31,6 +31,7 @@ namespace StepperCar {
      */
     //% blockId=calib_calc_wheel_dist block="calculate wheel diameter: distance %distMm mm | wheel rotations %rotations"
     //% advanced=true weight=96
+    //% group="Other"
     export function setWheelDiameterFromMeasuredDistance(distMm: number, rotations: number) {
         let circumference = distMm / rotations;
         let diameter = circumference / Math.PI;
@@ -64,6 +65,7 @@ namespace StepperCar {
      */
     //% blockId=calib_calc_car_dist block="calculate car diameter: car spins %carRotations | wheel rotations %wheelRotations"
     //% advanced=true weight=76
+    //% group="Other"
     export function setCarDiameterFromWheelRotations(carRotations: number, wheelRotations: number) {
         if (carRotations <= 0) return;
 
@@ -89,6 +91,7 @@ namespace StepperCar {
      */
     //% blockId=calib_clear block="clear all calibration"
     //% advanced=true weight=10
+    //% group="Other"
     export function clearCalibration(): void {
         settings.remove(WHEEL_DIAMETER_KEY);
         settings.remove(CAR_DIAMETER_KEY);
