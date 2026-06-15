@@ -25,20 +25,6 @@ namespace StepperCar {
     }
 
     /**
-     * Calculate and save wheel diameter based on a physically measured distance.
-     * @param distMm the actual distance the car traveled in millimeters
-     * @param rotations the number of full rotations the wheels made
-     */
-    //% blockId=calib_calc_wheel_dist block="calculate wheel diameter: distance %distMm mm | wheel rotations %rotations"
-    //% advanced=true weight=96
-    //% group="Other"
-    export function setWheelDiameterFromMeasuredDistance(distMm: number, rotations: number) {
-        let circumference = distMm / rotations;
-        let diameter = circumference / Math.PI;
-        setWheelDiameter(diameter);
-    }
-
-    /**
      * Get the currently saved wheel diameter.
      */
     //% blockId=calib_get_wheel block="wheel diameter (mm)"
@@ -56,24 +42,6 @@ namespace StepperCar {
     //% group="Calibration" weight=80
     export function setCarDiameter(value: number): void {
         settings.writeNumber(CAR_DIAMETER_KEY, value);
-    }
-
-    /**
-     * Calculate and save car diameter by comparing wheel rotations to car body spins.
-     * @param carRotations how many full 360° spins the car body made
-     * @param wheelRotations how many full rotations the wheels made to achieve that
-     */
-    //% blockId=calib_calc_car_dist block="calculate car diameter: car spins %carRotations | wheel rotations %wheelRotations"
-    //% advanced=true weight=76
-    //% group="Other"
-    export function setCarDiameterFromWheelRotations(carRotations: number, wheelRotations: number) {
-        if (carRotations <= 0) return;
-
-        // Formula: Car Diameter = (Wheel Rotations * Wheel Diameter) / Car Rotations
-        // We use the already saved wheel diameter for this calculation
-        let carDiameter = (wheelRotations * getWheelDiameter()) / carRotations;
-
-        setCarDiameter(carDiameter);
     }
 
     /**

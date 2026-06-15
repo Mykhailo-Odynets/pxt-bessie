@@ -54,11 +54,13 @@ namespace StepperCar {
     export function MotorRotate(motor: Motors, degree: number): void {
         if (motor === Motors.Both) return;
 
+        let adjustedDegree = degree * (50 / getFrequency());
+
         if (motor === Motors.M1) {
-            PCAmotor.StepperDegree(PCAmotor.Steppers.STPM1, degree);
+            PCAmotor.StepperDegree(PCAmotor.Steppers.STPM1, adjustedDegree);
         }
         if (motor === Motors.M2) {
-            PCAmotor.StepperDegree(PCAmotor.Steppers.STPM2, degree);
+            PCAmotor.StepperDegree(PCAmotor.Steppers.STPM2, adjustedDegree);
         }
 
         // Doesn't turn off automatically
